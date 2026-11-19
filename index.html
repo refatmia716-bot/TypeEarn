@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeEarn — Typing & Rewards Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Firebase Realtime Database Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#0b0e14',
+            slateCard: 'rgba(18, 22, 31, 0.76)',
+            emeraldAccent: '#10b981',
+            amberAccent: '#f59e0b',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #0b0e14;
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .studio-room-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background-image: url('https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      filter: blur(2px) saturate(0.9) brightness(0.42);
+      transform: scale(1.04);
+    }
+
+    .studio-room-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(circle at 18% 14%, rgba(245, 158, 11, 0.14), transparent 46%),
+                  radial-gradient(circle at 82% 84%, rgba(16, 185, 129, 0.14), transparent 50%),
+                  linear-gradient(180deg, rgba(11, 14, 20, 0.78) 0%, rgba(11, 14, 20, 0.93) 100%);
+    }
+
+    .glass-panel {
+      background: rgba(17, 22, 33, 0.76);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      box-shadow: 0 22px 54px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .glass-subtle {
+      background: rgba(30, 38, 54, 0.56);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.13);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 20, 30, 0.45);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+  <div class="studio-room-backdrop" aria-hidden="true"></div>
+  <div class="studio-room-overlay" aria-hidden="true"></div>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed top-4 right-4 left-4 sm:left-auto sm:w-96 z-50 hidden transition-all duration-300">
+    <div id="toastCard" class="glass-panel rounded-2xl px-4 py-3 flex items-start gap-3 border border-emerald-400/30 shadow-2xl">
+      <div id="toastDot" class="mt-1.5 h-2.5 w-2.5 rounded-full bg-emerald-400 shrink-0"></div>
+      <div class="flex-1 min-w-0">
+        <p id="toastTitle" class="text-sm font-semibold text-white">Notification</p>
+        <p id="toastMessage" class="text-xs text-slate-300 mt-0.5 break-words"></p>
+      </div>
+      <button type="button" onclick="hideToast()" class="text-slate-400 hover:text-white text-xs px-1.5 py-0.5 rounded-lg cursor-pointer">✕</button>
+    </div>
+  </div>
+
+  <!-- Top Header -->
+  <header class="sticky top-0 z-30 glass-panel border-b border-slate-700/40">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <svg class="w-9 h-9 shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="TypeEarn Logo">
+          <defs>
+            <linearGradient id="teGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#f59e0b" />
+              <stop offset="100%" stop-color="#10b981" />
+            </linearGradient>
+          </defs>
+          <rect width="40" height="40" rx="12" fill="url(#teGrad)" fill-opacity="0.18" />
+          <rect x="1" y="1" width="38" height="38" rx="11" stroke="url(#teGrad)" stroke-opacity="0.6" stroke-width="1.5" />
+          <path d="M11 13H29M20 13V28" stroke="#fbbf24" stroke-width="2.6" stroke-linecap="round" />
+          <circle cx="28" cy="25" r="3.5" fill="#10b981" />
+        </svg>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-extrabold tracking-tight text-white">Type<span class="text-amber-400">Earn</span></span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">10 pts/entry • 20% live referral commission</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div id="headerCountryBadge" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl glass-subtle text-xs font-semibold text-slate-200">
+          <span id="headerCountryFlag" class="text-sm leading-none">🇺🇸</span>
+          <span id="headerCountryCode" class="text-amber-300">+1</span>
+          <span id="headerCountryIso" class="hidden md:inline text-[11px] text-slate-400">US</span>
+        </div>
+
+        <div id="headerAuthActions" class="flex items-center gap-2 hidden">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl glass-subtle text-xs">
+            <span class="text-slate-400">Pts:</span>
+            <span id="headerPoints" class="font-bold text-emerald-400">0</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-slate-400">USD:</span>
+            <span id="headerUsd" class="font-bold text-amber-300">$0.0000</span>
+          </div>
+          <button
+            type="button"
+            onclick="logoutUser()"
+            class="px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-rose-500/20 hover:text-rose-200 border border-slate-700/80 text-xs font-semibold text-slate-300 transition cursor-pointer"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Centered Main Container -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-28">
+    <!-- ==================== AUTHENTICATION VIEW ==================== -->
+    <section id="authSection" class="max-w-md mx-auto">
+      <div class="glass-panel rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col items-center text-center mb-6">
+          <svg class="w-12 h-12 mb-3" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="teAuthGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#f59e0b" />
+                <stop offset="100%" stop-color="#10b981" />
+              </linearGradient>
+            </defs>
+            <rect width="48" height="48" rx="14" fill="url(#teAuthGrad)" fill-opacity="0.16" />
+            <rect x="1" y="1" width="46" height="46" rx="13" stroke="url(#teAuthGrad)" stroke-opacity="0.55" stroke-width="1.5" />
+            <path d="M13 15H35M24 15V34" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" />
+            <circle cx="34" cy="30" r="4" fill="#10b981" />
+          </svg>
+          <h1 class="text-2xl font-bold text-white tracking-tight">TypeEarn Studio</h1>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">Earn 10 points per typing entry and 20% live referral commission.</p>
+          <div id="referralBanner" class="mt-3 hidden px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300">
+            Invitation Code Detected: <strong id="incomingRefCode" class="font-mono"></strong>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 p-1 rounded-2xl bg-slate-900/85 border border-slate-800 mb-6">
+          <button
+            id="tabLoginBtn"
+            type="button"
+            onclick="switchAuthMode('login')"
+            class="py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer bg-amber-400 text-slate-950 shadow"
+          >
+            Sign In
+          </button>
+          <button
+            id="tabRegisterBtn"
+            type="button"
+            onclick="switchAuthMode('register')"
+            class="py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer text-slate-300 hover:text-white"
+          >
+            Register
+          </button>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label for="loginPhone" class="block text-xs font-medium text-slate-300 mb-1.5">Phone Number</label>
+            <input
+              id="loginPhone"
+              type="tel"
+              required
+              placeholder="Enter registered phone number"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+            />
+          </div>
+
+          <div>
+            <label for="loginPassword" class="block text-xs font-medium text-slate-300 mb-1.5">6-Digit Password</label>
+            <input
+              id="loginPassword"
+              type="password"
+              inputmode="numeric"
+              pattern="\d{6}"
+              minlength="6"
+              maxlength="6"
+              required
+              placeholder="Enter 6-digit password"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 tracking-widest focus:outline-none focus:border-amber-400 transition"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition cursor-pointer"
+          >
+            Sign In
+          </button>
+        </form>
+
+        <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+          <div>
+            <label for="regCountry" class="block text-xs font-medium text-slate-300 mb-1.5">Country</label>
+            <select
+              id="regCountry"
+              onchange="syncHeaderCountryFromSelect('regCountry')"
+              class="w-full px-3.5 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-400 transition"
+            ></select>
+          </div>
+
+          <div>
+            <label for="regName" class="block text-xs font-medium text-slate-300 mb-1.5">Full Name</label>
+            <input
+              id="regName"
+              type="text"
+              required
+              placeholder="Your full name"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+            />
+          </div>
+
+          <div>
+            <label for="regPhone" class="block text-xs font-medium text-slate-300 mb-1.5">Phone Number</label>
+            <div class="flex items-center gap-2">
+              <span id="regDialPreview" class="px-3 py-3 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-xs sm:text-sm font-semibold text-amber-300 shrink-0">
+                +1
+              </span>
+              <input
+                id="regPhone"
+                type="tel"
+                required
+                placeholder="Phone number"
+                class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="regEmail" class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
+            <input
+              id="regEmail"
+              type="email"
+              required
+              placeholder="name@example.com"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+            />
+          </div>
+
+          <div>
+            <label for="regPassword" class="block text-xs font-medium text-slate-300 mb-1.5">6-Digit Password</label>
+            <input
+              id="regPassword"
+              type="password"
+              inputmode="numeric"
+              pattern="\d{6}"
+              minlength="6"
+              maxlength="6"
+              required
+              placeholder="6 digits e.g. 482910"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 tracking-widest focus:outline-none focus:border-emerald-400 transition"
+            />
+          </div>
+
+          <div>
+            <label for="regInviteCode" class="block text-xs font-medium text-slate-300 mb-1.5">
+              Invitation Code <span class="text-amber-400">*</span>
+            </label>
+            <input
+              id="regInviteCode"
+              type="text"
+              required
+              placeholder="Enter invitation code (e.g. TE-ALEX4829)"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-amber-500/40 text-sm text-white placeholder-slate-500 font-mono uppercase focus:outline-none focus:border-amber-400 transition"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+          >
+            Create Account
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== AUTHENTICATED VIEW (FIXED CENTERED LAYOUT) ==================== -->
+    <section id="appSection" class="hidden max-w-2xl mx-auto space-y-6">
+      <!-- ---------- TAB 1: HOME / TYPE ---------- -->
+      <div id="tab-home" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="glass-panel rounded-2xl p-5 text-center">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Available Points</p>
+            <p id="homePointsVal" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-1.5">0</p>
+            <p class="text-[11px] text-slate-400 mt-1">+10 pts per entry</p>
+          </div>
+
+          <div class="glass-panel rounded-2xl p-5 text-center">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">USD Balance</p>
+            <p id="homeUsdVal" class="text-2xl sm:text-3xl font-extrabold text-amber-300 mt-1.5">$0.0000</p>
+            <p class="text-[11px] text-slate-400 mt-1">10 pts = $0.005333 USD</p>
+          </div>
+
+          <div class="glass-panel rounded-2xl p-5 text-center">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Submissions</p>
+            <p id="homeSubmissionsCount" class="text-2xl sm:text-3xl font-extrabold text-white mt-1.5">0</p>
+            <p class="text-[11px] text-slate-400 mt-1">Min 5 characters</p>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6 sm:p-7">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-lg sm:text-xl font-bold text-white">Typing Workspace</h2>
+              <p class="text-xs sm:text-sm text-slate-400">Type at least 5 characters and submit to earn +10 points.</p>
+            </div>
+            <span id="charCounterBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800/90 text-slate-300 border border-slate-700/80">
+              0 / 5 min chars
+            </span>
+          </div>
+
+          <form id="typingForm" onsubmit="handleTypingSubmit(event)" class="space-y-4">
+            <div>
+              <textarea
+                id="typingInput"
+                rows="4"
+                oninput="updateTypingCounter()"
+                placeholder="Write your typing text here (minimum 5 characters)..."
+                class="w-full px-4 py-3.5 rounded-2xl bg-slate-950/75 border border-slate-700/80 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition resize-none"
+              ></textarea>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p class="text-xs text-slate-400">
+                Reward: <span class="text-emerald-400 font-semibold">+10 Points</span> • Min Convert: <span class="text-amber-300 font-semibold">300 Points</span>
+              </p>
+              <button
+                id="submitTypingBtn"
+                type="submit"
+                disabled
+                class="px-6 py-3 rounded-2xl font-bold text-sm transition bg-slate-800 text-slate-500 cursor-not-allowed sm:min-w-[180px]"
+              >
+                Submit (+10 pts)
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6">
+          <h3 class="text-base font-bold text-white mb-3">Rates & Payout Rules</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+            <div class="glass-subtle rounded-2xl p-4">
+              <p class="text-slate-400 text-xs">10 Points Value</p>
+              <p class="font-bold text-emerald-400 mt-1">$0.005333 USD</p>
+            </div>
+            <div class="glass-subtle rounded-2xl p-4">
+              <p class="text-slate-400 text-xs">Minimum Convert</p>
+              <p class="font-bold text-white mt-1">300 Points ($0.15999)</p>
+            </div>
+            <div class="glass-subtle rounded-2xl p-4">
+              <p class="text-slate-400 text-xs">Referral Bonus</p>
+              <p class="font-bold text-amber-300 mt-1">20% Live Share</p>
+            </div>
+            <div class="glass-subtle rounded-2xl p-4">
+              <p class="text-slate-400 text-xs">Minimum Withdrawal</p>
+              <p class="font-bold text-emerald-300 mt-1">$8.00 USD</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- TAB 2: CONVERT POINTS (FIXED CENTERED, NO DRAG) ---------- -->
+      <div id="tab-convert" class="hidden space-y-6">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-white">Convert Points to USD</h2>
+              <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+                Minimum conversion is <span class="text-emerald-400 font-semibold">300 points</span> at <span class="text-amber-300 font-semibold">$0.005333 USD</span> per 10 points.
+              </p>
+            </div>
+            <div class="px-3.5 py-2 rounded-2xl glass-subtle text-right">
+              <p class="text-[11px] text-slate-400">Available Points</p>
+              <p id="convertAvailablePts" class="text-lg font-extrabold text-emerald-400">0</p>
+            </div>
+          </div>
+
+          <div class="glass-subtle rounded-2xl p-4 sm:p-5 mb-6 space-y-4">
+            <div class="flex items-center justify-between gap-2">
+              <label for="convertPointsInput" class="text-xs sm:text-sm font-semibold text-slate-200">
+                Points to Convert (Minimum 300)
+              </label>
+              <button
+                type="button"
+                onclick="setMaxConvertPoints()"
+                class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-2 cursor-pointer"
+              >
+                Use Available Points
+              </button>
+            </div>
+
+            <input
+              id="convertPointsInput"
+              type="number"
+              min="300"
+              step="10"
+              value="300"
+              oninput="updateConvertPreview()"
+              class="w-full px-4 py-3 rounded-xl bg-slate-950/75 border border-slate-700/80 text-base font-bold text-white focus:outline-none focus:border-emerald-400"
+            />
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs sm:text-sm">
+              <span class="text-slate-400">Estimated USD Value:</span>
+              <span id="convertUsdPreview" class="text-base font-extrabold text-amber-300">$0.159990 USD</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onclick="executePointConversion()"
+            class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/25 transition cursor-pointer"
+          >
+            Convert Points to USD
+          </button>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-bold text-white">Point Conversion Reference</h3>
+            <span class="text-[11px] text-amber-300 font-semibold">Min Withdrawal: $8.00 USD</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th class="py-2.5 pr-3 font-semibold">Points</th>
+                  <th class="py-2.5 px-3 font-semibold">USD Value</th>
+                  <th class="py-2.5 pl-3 font-semibold text-right">Tier Info</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/70 text-slate-200">
+                <tr>
+                  <td class="py-2.5 pr-3 font-semibold text-emerald-400">10 Points</td>
+                  <td class="py-2.5 px-3 font-mono">$0.005333</td>
+                  <td class="py-2.5 pl-3 text-right text-slate-400">1 Typing Submission</td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 pr-3 font-semibold text-emerald-400">300 Points</td>
+                  <td class="py-2.5 px-3 font-mono">$0.159990</td>
+                  <td class="py-2.5 pl-3 text-right text-amber-300">Minimum Convert</td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 pr-3 font-semibold text-emerald-400">1,000 Points</td>
+                  <td class="py-2.5 px-3 font-mono">$0.533300</td>
+                  <td class="py-2.5 pl-3 text-right text-slate-400">100 Submissions</td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 pr-3 font-semibold text-amber-300">16,000 Points</td>
+                  <td class="py-2.5 px-3 font-mono">$8.532800</td>
+                  <td class="py-2.5 pl-3 text-right text-emerald-300 font-semibold">Above $8.00 Min</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- TAB 3: PROFILE / ACCOUNT (FIXED CENTERED) ---------- -->
+      <div id="tab-profile" class="hidden space-y-6">
+        <div class="glass-panel rounded-3xl p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/25 to-emerald-500/25 border border-amber-400/40 flex items-center justify-center text-lg font-extrabold text-white shrink-0">
+                <span id="profileAvatarInitials">TE</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Profile</span>
+                  <span id="profileCountryPill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800/90 text-slate-200 border border-slate-700/80">
+                    <span id="profileCountryFlag">🇺🇸</span>
+                    <span id="profileCountryName">United States</span>
+                    <span id="profileCountryCode" class="text-amber-300">(+1)</span>
+                  </span>
+                </div>
+                <h2 id="profileDisplayName" class="text-xl sm:text-2xl font-extrabold text-white mt-1.5">—</h2>
+                <p class="text-xs text-slate-400 mt-1">
+                  UID / Invitation Code: <span id="profileInviteCodeBadge" class="font-mono font-bold text-amber-300">—</span>
+                </p>
+              </div>
+            </div>
+            <div class="glass-subtle rounded-2xl px-4 py-3 text-left sm:text-right">
+              <p class="text-[11px] text-slate-400">USD Balance</p>
+              <p id="profileUsdBalance" class="text-xl font-extrabold text-amber-300">$0.0000</p>
+              <p class="text-[11px] text-emerald-400 font-medium mt-0.5"><span id="profilePointsBalance">0</span> Points</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-lg font-bold text-white">Referral Commissions (20% Live)</h3>
+              <p class="text-xs text-slate-400">Receive 20% live commission whenever your invited members earn points.</p>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <div class="glass-subtle px-3 py-2 rounded-xl text-center">
+                <span class="text-slate-400 block text-[10px]">Invited</span>
+                <strong id="referralCountBadge" class="text-white text-sm">0</strong>
+              </div>
+              <div class="glass-subtle px-3 py-2 rounded-xl text-center">
+                <span class="text-slate-400 block text-[10px]">Bonus Pts</span>
+                <strong id="commissionPointsBadge" class="text-emerald-400 text-sm">0</strong>
+              </div>
+              <div class="glass-subtle px-3 py-2 rounded-xl text-center">
+                <span class="text-slate-400 block text-[10px]">Bonus USD</span>
+                <strong id="commissionUsdBadge" class="text-amber-300 text-sm">$0.0000</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-subtle rounded-2xl p-4">
+            <label class="block text-[11px] text-slate-400 mb-1.5">Your UID / Invitation Code</label>
+            <div class="flex items-center justify-between gap-3">
+              <span id="myInviteCodeText" class="font-mono text-sm sm:text-base font-bold text-amber-300 truncate">—</span>
+              <button
+                type="button"
+                onclick="copyInviteCode()"
+                class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shrink-0 transition cursor-pointer"
+              >
+                Copy Code
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">Referral Commission History</h4>
+            <div id="commissionFeedList" class="space-y-2.5">
+              <p class="text-xs text-slate-400 py-3 text-center glass-subtle rounded-2xl">
+                No referral commissions yet. Share your invitation code to earn 20% live.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-lg font-bold text-white">Withdraw Funds</h3>
+              <p class="text-xs text-slate-400">Minimum withdrawal is <span class="text-amber-300 font-semibold">$8.00 USD</span> • Requests start as Pending.</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[11px] text-slate-400">Available USD</p>
+              <p id="withdrawAvailableUsd" class="text-lg font-extrabold text-amber-300">$0.0000</p>
+            </div>
+          </div>
+
+          <form id="withdrawForm" onsubmit="handleWithdrawalSubmit(event)" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="withdrawMethod" class="block text-xs font-medium text-slate-300 mb-1.5">
+                  Withdrawal Method
+                </label>
+                <select
+                  id="withdrawMethod"
+                  onchange="updateWalletPlaceholder()"
+                  class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white focus:outline-none focus:border-emerald-400"
+                ></select>
+              </div>
+
+              <div>
+                <label for="withdrawAmount" class="block text-xs font-medium text-slate-300 mb-1.5">
+                  Amount (USD, Min $8.00)
+                </label>
+                <input
+                  id="withdrawAmount"
+                  type="number"
+                  step="0.01"
+                  min="8"
+                  required
+                  placeholder="8.00"
+                  class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label id="walletAddressLabel" for="withdrawWalletAddress" class="block text-xs font-medium text-slate-300 mb-1.5">
+                Wallet Address / Account Number
+              </label>
+              <input
+                id="withdrawWalletAddress"
+                type="text"
+                required
+                placeholder="Enter BEP20 (BNB Network) address"
+                class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-emerald-500 hover:from-amber-300 hover:to-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+            >
+              Request Withdrawal
+            </button>
+          </form>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-bold text-white">Transaction History</h3>
+              <p class="text-xs text-slate-400">All typing entries, conversions, commissions, and withdrawals.</p>
+            </div>
+          </div>
+
+          <div id="transactionList" class="space-y-3">
+            <p class="text-xs text-slate-400 py-4 text-center">No transactions recorded yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Fixed Bottom Navigation Bar -->
+  <nav id="bottomNav" class="fixed bottom-0 inset-x-0 z-30 glass-panel border-t border-slate-700/40 hidden">
+    <div class="max-w-md mx-auto grid grid-cols-3 px-2 py-2">
+      <button
+        id="navBtn-home"
+        type="button"
+        onclick="switchTab('home')"
+        class="flex flex-col items-center justify-center py-2 rounded-2xl text-emerald-400 bg-emerald-500/10 font-semibold text-xs transition cursor-pointer"
+      >
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6" />
+        </svg>
+        Home
+      </button>
+
+      <button
+        id="navBtn-convert"
+        type="button"
+        onclick="switchTab('convert')"
+        class="flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white font-medium text-xs transition cursor-pointer"
+      >
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+        Convert
+      </button>
+
+      <button
+        id="navBtn-profile"
+        type="button"
+        onclick="switchTab('profile')"
+        class="flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white font-medium text-xs transition cursor-pointer"
+      >
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        Profile
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "REPLACE_WITH_API_KEY",
+      authDomain: "REPLACE_WITH_PROJECT.firebaseapp.com",
+      databaseURL: "https://REPLACE_WITH_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "REPLACE_WITH_PROJECT",
+      storageBucket: "REPLACE_WITH_PROJECT.appspot.com",
+      messagingSenderId: "000000000000",
+      appId: "1:000000000000:web:0000000000000000"
+    };
+
+    const isFirebaseConfigured = Boolean(
+      firebaseConfig.apiKey &&
+      !firebaseConfig.apiKey.startsWith("REPLACE_WITH_") &&
+      firebaseConfig.databaseURL &&
+      !firebaseConfig.databaseURL.includes("REPLACE_WITH_")
+    );
+
+    let rtdb = null;
+    if (isFirebaseConfigured && window.firebase) {
+      try {
+        const app = firebase.initializeApp(firebaseConfig);
+        rtdb = firebase.database(app);
+      } catch (err) {
+        console.warn("Firebase initialization fallback to local store:", err);
+      }
+    }
+
+    const MIN_TYPING_CHARS = 5;
+    const POINTS_PER_SUBMISSION = 10;
+    const REFERRAL_COMMISSION_RATE = 0.2;
+    const MIN_CONVERT_POINTS = 300;
+    const USD_PER_10_POINTS = 0.005333;
+    const MIN_WITHDRAWAL_USD = 8.0;
+
+    function isoToFlag(iso2) {
+      if (!iso2 || iso2.length !== 2) return "🌐";
+      const codePoints = [...iso2.toUpperCase()].map((char) => 127397 + char.charCodeAt(0));
+      return String.fromCodePoint(...codePoints);
+    }
+
+    const RAW_COUNTRIES = [
+      ["US", "United States", "+1"],
+      ["BD", "Bangladesh", "+880"],
+      ["GB", "United Kingdom", "+44"],
+      ["CA", "Canada", "+1"],
+      ["IN", "India", "+91"],
+      ["AE", "United Arab Emirates", "+971"],
+      ["SA", "Saudi Arabia", "+966"],
+      ["AU", "Australia", "+61"],
+      ["DE", "Germany", "+49"],
+      ["FR", "France", "+33"],
+      ["IT", "Italy", "+39"],
+      ["ES", "Spain", "+34"],
+      ["PK", "Pakistan", "+92"],
+      ["NG", "Nigeria", "+234"],
+      ["PH", "Philippines", "+63"],
+      ["ID", "Indonesia", "+62"],
+      ["MY", "Malaysia", "+60"],
+      ["SG", "Singapore", "+65"],
+      ["JP", "Japan", "+81"],
+      ["KR", "South Korea", "+82"],
+      ["BR", "Brazil", "+55"],
+      ["ZA", "South Africa", "+27"]
+    ];
+
+    const COUNTRIES = RAW_COUNTRIES.map(([iso, name, code]) => ({
+      iso,
+      name,
+      code,
+      flag: isoToFlag(iso)
+    }));
+
+    let currentUser = null;
+    let userTransactions = [];
+    let userCommissions = [];
+    let referredMembersCount = 0;
+    let userSubmissionsCount = 0;
+    let activeRefFromUrl = null;
+    let dbListeners = [];
+
+    window.addEventListener("DOMContentLoaded", () => {
+      populateCountrySelects();
+      parseReferralParameter();
+
+      const savedSessionUid = sessionStorage.getItem("te_active_uid");
+      if (savedSessionUid) {
+        loadUserSession(savedSessionUid);
+      }
+    });
+
+    function populateCountrySelects() {
+      const optionsHtml = COUNTRIES.map(
+        (c, idx) =>
+          `<option value="${c.iso}" data-code="${c.code}" data-flag="${c.flag}" ${idx === 0 ? "selected" : ""}>${c.flag} ${c.name} (${c.code})</option>`
+      ).join("");
+
+      document.getElementById("regCountry").innerHTML = optionsHtml;
+    }
+
+    function setHeaderCountryBadge(countryObj) {
+      const c = countryObj || COUNTRIES[0];
+      document.getElementById("headerCountryFlag").textContent = c.flag || isoToFlag(c.iso);
+      document.getElementById("headerCountryCode").textContent = c.code || "+1";
+      document.getElementById("headerCountryIso").textContent = c.iso || "US";
+    }
+
+    function syncHeaderCountryFromSelect(selectId) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const iso = select.value;
+      const country = COUNTRIES.find((c) => c.iso === iso) || COUNTRIES[0];
+      setHeaderCountryBadge(country);
+
+      if (selectId === "regCountry") {
+        document.getElementById("regDialPreview").textContent = country.code;
+      }
+    }
+
+    function parseReferralParameter() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get("ref");
+        if (ref && ref.trim()) {
+          activeRefFromUrl = ref.trim().toUpperCase();
+          document.getElementById("incomingRefCode").textContent = activeRefFromUrl;
+          document.getElementById("referralBanner").classList.remove("hidden");
+          const inviteInput = document.getElementById("regInviteCode");
+          if (inviteInput && !inviteInput.value) {
+            inviteInput.value = activeRefFromUrl;
+          }
+        }
+      } catch (err) {
+        console.warn("Unable to parse referral code from URL:", err);
+      }
+    }
+
+    function showToast(title, message, isError = false) {
+      const banner = document.getElementById("toastBanner");
+      const dot = document.getElementById("toastDot");
+      const titleEl = document.getElementById("toastTitle");
+      const msgEl = document.getElementById("toastMessage");
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      dot.className = `mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${isError ? "bg-rose-400" : "bg-emerald-400"}`;
+
+      banner.classList.remove("hidden");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        hideToast();
+      }, 3600);
+    }
+
+    function hideToast() {
+      document.getElementById("toastBanner").classList.add("hidden");
+    }
+
+    function getLocalStore() {
+      try {
+        const raw = localStorage.getItem("typeearn_store_v2");
+        return raw
+          ? JSON.parse(raw)
+          : { users: {}, submissions: {}, transactions: {}, commissions: {}, withdrawals: {} };
+      } catch {
+        return { users: {}, submissions: {}, transactions: {}, commissions: {}, withdrawals: {} };
+      }
+    }
+
+    function saveLocalStore(store) {
+      localStorage.setItem("typeearn_store_v2", JSON.stringify(store));
+    }
+
+    async function fetchAllUsers() {
+      if (rtdb) {
+        const snap = await rtdb.ref("users").once("value");
+        return snap.val() || {};
+      }
+      return getLocalStore().users || {};
+    }
+
+    async function writeUserRecord(uid, data) {
+      if (rtdb) {
+        await rtdb.ref(`users/${uid}`).set(data);
+      }
+      const store = getLocalStore();
+      store.users[uid] = data;
+      saveLocalStore(store);
+    }
+
+    async function updateUserFields(uid, patch) {
+      if (rtdb) {
+        await rtdb.ref(`users/${uid}`).update(patch);
+      }
+      const store = getLocalStore();
+      store.users[uid] = { ...(store.users[uid] || {}), ...patch };
+      saveLocalStore(store);
+    }
+
+    async function createPushedEntry(path, payload) {
+      const pushId = "te_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+      const record = { id: pushId, ...payload };
+
+      if (rtdb) {
+        await rtdb.ref(`${path}/${pushId}`).set(record);
+      }
+      const store = getLocalStore();
+      const parts = path.split("/");
+      let cursor = store;
+      for (let i = 0; i < parts.length; i++) {
+        const key = parts[i];
+        if (!cursor[key]) cursor[key] = {};
+        if (i === parts.length - 1) {
+          cursor[key][pushId] = record;
+        } else {
+          cursor = cursor[key];
+        }
+      }
+      saveLocalStore(store);
+      return record;
+    }
+
+    function subscribeUserData(uid) {
+      dbListeners.forEach((unsub) => unsub());
+      dbListeners = [];
+
+      if (rtdb) {
+        const userRef = rtdb.ref(`users/${uid}`);
+        const onUser = (snap) => {
+          if (snap.exists()) {
+            currentUser = snap.val();
+            setHeaderCountryBadge({
+              iso: currentUser.countryIso,
+              name: currentUser.countryName,
+              code: currentUser.dialCode,
+              flag: currentUser.countryFlag || isoToFlag(currentUser.countryIso)
+            });
+            renderUserStats();
+            renderProfileView();
+          }
+        };
+        userRef.on("value", onUser);
+        dbListeners.push(() => userRef.off("value", onUser));
+
+        const txRef = rtdb.ref(`transactions/${uid}`);
+        const onTx = (snap) => {
+          const val = snap.val() || {};
+          userTransactions = Object.values(val).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          renderTransactions();
+        };
+        txRef.on("value", onTx);
+        dbListeners.push(() => txRef.off("value", onTx));
+
+        const commRef = rtdb.ref(`commissions/${uid}`);
+        const onComm = (snap) => {
+          const val = snap.val() || {};
+          userCommissions = Object.values(val).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          renderCommissions();
+        };
+        commRef.on("value", onComm);
+        dbListeners.push(() => commRef.off("value", onComm));
+
+        const subRef = rtdb.ref(`submissions/${uid}`);
+        const onSub = (snap) => {
+          const val = snap.val() || {};
+          userSubmissionsCount = Object.keys(val).length;
+          renderUserStats();
+        };
+        subRef.on("value", onSub);
+        dbListeners.push(() => subRef.off("value", onSub));
+
+        const allUsersRef = rtdb.ref("users");
+        const onUsers = (snap) => {
+          const users = snap.val() || {};
+          const myCode = (currentUser?.inviteCode || currentUser?.uid || "").toUpperCase();
+          referredMembersCount = Object.values(users).filter(
+            (u) => u.uid !== uid && (u.invitedBy || "").toUpperCase() === myCode
+          ).length;
+          renderCommissions();
+        };
+        allUsersRef.on("value", onUsers);
+        dbListeners.push(() => allUsersRef.off("value", onUsers));
+      } else {
+        refreshFromLocalStore(uid);
+      }
+    }
+
+    function refreshFromLocalStore(uid) {
+      const store = getLocalStore();
+      if (store.users && store.users[uid]) {
+        currentUser = store.users[uid];
+        setHeaderCountryBadge({
+          iso: currentUser.countryIso,
+          name: currentUser.countryName,
+          code: currentUser.dialCode,
+          flag: currentUser.countryFlag || isoToFlag(currentUser.countryIso)
+        });
+      }
+
+      const txMap = (store.transactions && store.transactions[uid]) || {};
+      userTransactions = Object.values(txMap).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      const commMap = (store.commissions && store.commissions[uid]) || {};
+      userCommissions = Object.values(commMap).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      const subMap = (store.submissions && store.submissions[uid]) || {};
+      userSubmissionsCount = Object.keys(subMap).length;
+
+      const allUsers = Object.values(store.users || {});
+      const myCode = (currentUser?.inviteCode || currentUser?.uid || "").toUpperCase();
+      referredMembersCount = allUsers.filter(
+        (u) => u.uid !== uid && (u.invitedBy || "").toUpperCase() === myCode
+      ).length;
+
+      renderUserStats();
+      renderProfileView();
+      renderCommissions();
+      renderTransactions();
+    }
+
+    function switchAuthMode(mode) {
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const tabLoginBtn = document.getElementById("tabLoginBtn");
+      const tabRegisterBtn = document.getElementById("tabRegisterBtn");
+
+      if (mode === "login") {
+        loginForm.classList.remove("hidden");
+        registerForm.classList.add("hidden");
+        tabLoginBtn.className = "py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer bg-amber-400 text-slate-950 shadow";
+        tabRegisterBtn.className = "py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer text-slate-300 hover:text-white";
+      } else {
+        registerForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+        tabRegisterBtn.className = "py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer bg-emerald-500 text-slate-950 shadow";
+        tabLoginBtn.className = "py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer text-slate-300 hover:text-white";
+        syncHeaderCountryFromSelect("regCountry");
+      }
+    }
+
+    function generateInvitationCode(fullName, existingUsersMap) {
+      const cleanLetters = (fullName || "USER")
+        .replace(/[^a-zA-Z]/g, "")
+        .toUpperCase()
+        .slice(0, 5) || "USER";
+
+      let candidate = "";
+      let exists = true;
+      while (exists) {
+        const digits = Math.floor(1000 + Math.random() * 9000);
+        candidate = `TE-${cleanLetters}${digits}`;
+        exists = Object.values(existingUsersMap).some(
+          (u) => (u.inviteCode || u.uid || "").toUpperCase() === candidate
+        );
+      }
+      return candidate;
+    }
+
+    function normalizePhone(dialCode, rawPhone) {
+      const digitsOnly = String(rawPhone || "").replace(/\D/g, "").replace(/^0+/, "");
+      return `${dialCode}${digitsOnly}`;
+    }
+
+    async function handleRegister(event) {
+      event.preventDefault();
+      try {
+        const countryIso = document.getElementById("regCountry").value;
+        const countryObj = COUNTRIES.find((c) => c.iso === countryIso) || COUNTRIES[0];
+        const name = document.getElementById("regName").value.trim();
+        const phone = document.getElementById("regPhone").value.trim();
+        const email = document.getElementById("regEmail").value.trim();
+        const password = document.getElementById("regPassword").value.trim();
+        const inviteCodeInput = document.getElementById("regInviteCode").value.trim().toUpperCase();
+
+        if (!inviteCodeInput) {
+          showToast("Invitation Code Required", "Please enter a valid invitation code to register.", true);
+          return;
+        }
+
+        if (!/^\d{6}$/.test(password)) {
+          showToast("Invalid Password", "Password must be a 6-digit number.", true);
+          return;
+        }
+
+        const existingUsers = await fetchAllUsers();
+        const normalizedPhone = normalizePhone(countryObj.code, phone);
+
+        const phoneTaken = Object.values(existingUsers).some(
+          (u) => u.fullPhone === normalizedPhone
+        );
+        if (phoneTaken) {
+          showToast("Account Exists", "This phone number is already registered. Please sign in.", true);
+          return;
+        }
+
+        const inviteCode = generateInvitationCode(name, existingUsers);
+        const uid = inviteCode;
+
+        const userRecord = {
+          uid,
+          inviteCode,
+          name,
+          countryIso: countryObj.iso,
+          countryName: countryObj.name,
+          dialCode: countryObj.code,
+          countryFlag: countryObj.flag,
+          phone,
+          fullPhone: normalizedPhone,
+          email,
+          password,
+          invitedBy: inviteCodeInput,
+          points: 0,
+          usdBalance: 0,
+          commissionPointsEarned: 0,
+          commissionUsdEarned: 0,
+          createdAt: Date.now()
+        };
+
+        await writeUserRecord(uid, userRecord);
+        sessionStorage.setItem("te_active_uid", uid);
+        await loadUserSession(uid);
+        showToast("Account Created", `Welcome, ${name}! Your invitation code is ${inviteCode}.`);
+      } catch (err) {
+        console.error(err);
+        showToast("Registration Error", "Could not complete registration.", true);
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      try {
+        const phone = document.getElementById("loginPhone").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
+
+        if (!/^\d{6}$/.test(password)) {
+          showToast("Invalid Password", "Please enter your 6-digit numeric password.", true);
+          return;
+        }
+
+        const rawDigits = phone.replace(/\D/g, "").replace(/^0+/, "");
+        const usersMap = await fetchAllUsers();
+
+        const matchedUser = Object.values(usersMap).find((u) => {
+          const storedDigits = String(u.phone || "").replace(/\D/g, "").replace(/^0+/, "");
+          const normalizedStored = normalizePhone(u.dialCode || "", u.phone || "");
+          const matchesPhone =
+            (rawDigits.length > 0 && storedDigits === rawDigits) ||
+            (u.fullPhone && (u.fullPhone === phone || u.fullPhone.endsWith(rawDigits))) ||
+            normalizedStored === phone;
+          return matchesPhone && String(u.password) === password;
+        });
+
+        if (matchedUser) {
+          sessionStorage.setItem("te_active_uid", matchedUser.uid);
+          await loadUserSession(matchedUser.uid);
+          showToast("Signed In", `Welcome back, ${matchedUser.name}.`);
+          return;
+        }
+
+        const conflictingAccount = Object.values(usersMap).find((u) => {
+          const storedDigits = String(u.phone || "").replace(/\D/g, "").replace(/^0+/, "");
+          const normalizedStored = normalizePhone(u.dialCode || "", u.phone || "");
+          return (
+            (rawDigits.length > 0 && storedDigits === rawDigits) ||
+            (u.fullPhone && (u.fullPhone === phone || u.fullPhone.endsWith(rawDigits))) ||
+            normalizedStored === phone
+          );
+        });
+
+        if (conflictingAccount) {
+          showToast("Sign In Failed", "Incorrect 6-digit password for this phone number.", true);
+          return;
+        }
+
+        const inferredCountry =
+          phone.startsWith("+880") || rawDigits.startsWith("880")
+            ? COUNTRIES.find((c) => c.iso === "BD") || COUNTRIES[0]
+            : COUNTRIES[0];
+        const quickName = `Member ${rawDigits.slice(-4) || "User"}`;
+        const inviteCode = generateInvitationCode(quickName, usersMap);
+        const uid = inviteCode;
+
+        const quickUser = {
+          uid,
+          inviteCode,
+          name: quickName,
+          countryIso: inferredCountry.iso,
+          countryName: inferredCountry.name,
+          dialCode: inferredCountry.code,
+          countryFlag: inferredCountry.flag,
+          phone,
+          fullPhone: phone.startsWith("+") ? phone : normalizePhone(inferredCountry.code, phone),
+          email: "",
+          password,
+          invitedBy: activeRefFromUrl || "DIRECT",
+          points: 0,
+          usdBalance: 0,
+          commissionPointsEarned: 0,
+          commissionUsdEarned: 0,
+          createdAt: Date.now()
+        };
+
+        await writeUserRecord(uid, quickUser);
+        sessionStorage.setItem("te_active_uid", uid);
+        await loadUserSession(uid);
+        showToast("Signed In", `Welcome to TypeEarn, ${quickUser.name}.`);
+      } catch (err) {
+        console.error(err);
+        showToast("Sign In Error", "Unable to sign in right now.", true);
+      }
+    }
+
+    async function loadUserSession(uid) {
+      const usersMap = await fetchAllUsers();
+      const user = usersMap[uid];
+      if (!user) {
+        sessionStorage.removeItem("te_active_uid");
+        return;
+      }
+
+      currentUser = user;
+      setHeaderCountryBadge({
+        iso: user.countryIso,
+        name: user.countryName,
+        code: user.dialCode,
+        flag: user.countryFlag || isoToFlag(user.countryIso)
+      });
+
+      document.getElementById("authSection").classList.add("hidden");
+      document.getElementById("appSection").classList.remove("hidden");
+      document.getElementById("bottomNav").classList.remove("hidden");
+      document.getElementById("headerAuthActions").classList.remove("hidden");
+
+      subscribeUserData(uid);
+      switchTab("home");
+      renderUserStats();
+      renderProfileView();
+      renderCommissions();
+      renderTransactions();
+    }
+
+    function logoutUser() {
+      dbListeners.forEach((unsub) => unsub());
+      dbListeners = [];
+      currentUser = null;
+      sessionStorage.removeItem("te_active_uid");
+
+      document.getElementById("appSection").classList.add("hidden");
+      document.getElementById("bottomNav").classList.add("hidden");
+      document.getElementById("headerAuthActions").classList.add("hidden");
+      document.getElementById("authSection").classList.remove("hidden");
+      document.getElementById("loginForm").reset();
+      document.getElementById("registerForm").reset();
+      setHeaderCountryBadge(COUNTRIES[0]);
+    }
+
+    function switchTab(tabName) {
+      ["home", "convert", "profile"].forEach((t) => {
+        const panel = document.getElementById(`tab-${t}`);
+        const navBtn = document.getElementById(`navBtn-${t}`);
+        if (panel) panel.classList.toggle("hidden", t !== tabName);
+        if (navBtn) {
+          if (t === tabName) {
+            navBtn.className = "flex flex-col items-center justify-center py-2 rounded-2xl text-emerald-400 bg-emerald-500/10 font-semibold text-xs transition cursor-pointer";
+          } else {
+            navBtn.className = "flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white font-medium text-xs transition cursor-pointer";
+          }
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: "instant" });
+
+      if (tabName === "convert") {
+        updateConvertPreview();
+      } else if (tabName === "profile") {
+        renderProfileView();
+        renderCommissions();
+        renderTransactions();
+      }
+    }
+
+    function getInitials(name) {
+      const parts = String(name || "TE").trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function renderUserStats() {
+      if (!currentUser) return;
+      const pts = Number(currentUser.points || 0);
+      const usd = Number(currentUser.usdBalance || 0);
+
+      document.getElementById("headerPoints").textContent = pts.toLocaleString();
+      document.getElementById("headerUsd").textContent = `$${usd.toFixed(4)}`;
+
+      document.getElementById("homePointsVal").textContent = pts.toLocaleString();
+      document.getElementById("homeUsdVal").textContent = `$${usd.toFixed(4)}`;
+      document.getElementById("homeSubmissionsCount").textContent = userSubmissionsCount.toLocaleString();
+
+      document.getElementById("convertAvailablePts").textContent = pts.toLocaleString();
+      document.getElementById("profilePointsBalance").textContent = pts.toLocaleString();
+      document.getElementById("profileUsdBalance").textContent = `$${usd.toFixed(4)}`;
+      document.getElementById("withdrawAvailableUsd").textContent = `$${usd.toFixed(4)}`;
+    }
+
+    function renderProfileView() {
+      if (!currentUser) return;
+      const myCode = currentUser.inviteCode || currentUser.uid;
+      const flag = currentUser.countryFlag || isoToFlag(currentUser.countryIso);
+
+      document.getElementById("profileAvatarInitials").textContent = getInitials(currentUser.name);
+      document.getElementById("profileDisplayName").textContent = currentUser.name;
+      document.getElementById("profileInviteCodeBadge").textContent = myCode;
+      document.getElementById("myInviteCodeText").textContent = myCode;
+
+      document.getElementById("profileCountryFlag").textContent = flag;
+      document.getElementById("profileCountryName").textContent = currentUser.countryName || "United States";
+      document.getElementById("profileCountryCode").textContent = `(${currentUser.dialCode || "+1"})`;
+
+      populateWithdrawalMethods(currentUser.countryIso);
+    }
+
+    function populateWithdrawalMethods(countryIso) {
+      const select = document.getElementById("withdrawMethod");
+      if (!select) return;
+
+      const previousValue = select.value;
+      const methods = [];
+
+      if (countryIso === "BD") {
+        methods.push(
+          { value: "bKash", label: "bKash (Bangladesh)" },
+          { value: "Nagad", label: "Nagad (Bangladesh)" },
+          { value: "Binance", label: "Binance (BEP20 / BNB Network)" },
+          { value: "Crypto (BEP20 BNB Network)", label: "Crypto (BEP20 BNB Network)" }
+        );
+      } else {
+        methods.push(
+          { value: "Crypto (BEP20 BNB Network)", label: "Crypto (BEP20 BNB Network)" },
+          { value: "Binance", label: "Binance (BEP20 / BNB Network)" }
+        );
+      }
+
+      select.innerHTML = methods
+        .map((m) => `<option value="${m.value}">${m.label}</option>`)
+        .join("");
+
+      if (previousValue && methods.some((m) => m.value === previousValue)) {
+        select.value = previousValue;
+      }
+
+      updateWalletPlaceholder();
+    }
+
+    function updateWalletPlaceholder() {
+      const method = document.getElementById("withdrawMethod").value;
+      const label = document.getElementById("walletAddressLabel");
+      const input = document.getElementById("withdrawWalletAddress");
+
+      if (method === "bKash" || method === "Nagad") {
+        label.textContent = `${method} Account Number`;
+        input.placeholder = `Enter ${method} personal number (e.g. 017XXXXXXXX)`;
+      } else if (method === "Binance") {
+        label.textContent = "Binance Pay ID / BEP20 (BNB Network) Address";
+        input.placeholder = "Enter Binance BEP20 (0x...) address or Pay ID";
+      } else {
+        label.textContent = "Crypto Wallet Address (BEP20 BNB Network)";
+        input.placeholder = "Enter BEP20 (BNB Network) wallet address (0x...)";
+      }
+    }
+
+    function copyInviteCode() {
+      if (!currentUser) return;
+      const code = currentUser.inviteCode || currentUser.uid;
+      const tempInput = document.createElement("input");
+      tempInput.value = code;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand("copy");
+        showToast("Copied", `Invitation code ${code} copied to clipboard.`);
+      } catch {
+        showToast("Invitation Code", `Your code is ${code}.`);
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function updateTypingCounter() {
+      const text = document.getElementById("typingInput").value || "";
+      const len = text.trim().length;
+      const badge = document.getElementById("charCounterBadge");
+      const btn = document.getElementById("submitTypingBtn");
+
+      badge.textContent = `${len} / ${MIN_TYPING_CHARS} min chars`;
+
+      if (len >= MIN_TYPING_CHARS) {
+        badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+        btn.disabled = false;
+        btn.className = "px-6 py-3 rounded-2xl font-bold text-sm transition bg-gradient-to-r from-emerald-500 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-slate-950 shadow-lg shadow-emerald-500/20 cursor-pointer sm:min-w-[180px]";
+      } else {
+        badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-slate-800/90 text-slate-300 border border-slate-700/80";
+        btn.disabled = true;
+        btn.className = "px-6 py-3 rounded-2xl font-bold text-sm transition bg-slate-800 text-slate-500 cursor-not-allowed sm:min-w-[180px]";
+      }
+    }
+
+    async function handleTypingSubmit(event) {
+      event.preventDefault();
+      if (!currentUser) return;
+
+      const inputEl = document.getElementById("typingInput");
+      const rawText = inputEl.value || "";
+      const trimmed = rawText.trim();
+
+      if (trimmed.length < MIN_TYPING_CHARS) {
+        showToast("Minimum 5 Characters", "Please type at least 5 characters before submitting.", true);
+        return;
+      }
+
+      try {
+        const now = Date.now();
+        const nextPoints = Number(currentUser.points || 0) + POINTS_PER_SUBMISSION;
+
+        await createPushedEntry(`submissions/${currentUser.uid}`, {
+          text: trimmed,
+          charCount: trimmed.length,
+          pointsAwarded: POINTS_PER_SUBMISSION,
+          createdAt: now
+        });
+
+        await createPushedEntry(`transactions/${currentUser.uid}`, {
+          type: "typing",
+          title: "Typing Submission",
+          detail: `"${trimmed.slice(0, 42)}${trimmed.length > 42 ? "..." : ""}" (${trimmed.length} chars)`,
+          amountLabel: `+${POINTS_PER_SUBMISSION} pts`,
+          status: "Completed",
+          createdAt: now
+        });
+
+        await updateUserFields(currentUser.uid, { points: nextPoints });
+        await distributeLiveReferralCommission(currentUser, POINTS_PER_SUBMISSION, now);
+
+        inputEl.value = "";
+        updateTypingCounter();
+
+        if (!rtdb) {
+          refreshFromLocalStore(currentUser.uid);
+        }
+
+        showToast("Submission Accepted", `+${POINTS_PER_SUBMISSION} points added to your balance.`);
+      } catch (err) {
+        console.error(err);
+        showToast("Submission Failed", "Could not save your typing submission.", true);
+      }
+    }
+
+    async function distributeLiveReferralCommission(earnerUser, earnedPoints, timestamp) {
+      const inviterCode = (earnerUser.invitedBy || "").trim().toUpperCase();
+      if (!inviterCode || inviterCode === (earnerUser.inviteCode || earnerUser.uid || "").toUpperCase()) {
+        return;
+      }
+
+      const commissionPts = Number((earnedPoints * REFERRAL_COMMISSION_RATE).toFixed(2));
+      if (commissionPts <= 0) return;
+
+      const commissionUsd = Number(((commissionPts / 10) * USD_PER_10_POINTS).toFixed(6));
+      const allUsers = await fetchAllUsers();
+
+      const referrer = Object.values(allUsers).find(
+        (u) => (u.inviteCode || u.uid || "").toUpperCase() === inviterCode
+      );
+
+      if (!referrer) return;
+
+      const updatedRefPoints = Number((Number(referrer.points || 0) + commissionPts).toFixed(2));
+      const updatedRefUsd = Number((Number(referrer.usdBalance || 0) + commissionUsd).toFixed(6));
+      const updatedCommPts = Number((Number(referrer.commissionPointsEarned || 0) + commissionPts).toFixed(2));
+      const updatedCommUsd = Number((Number(referrer.commissionUsdEarned || 0) + commissionUsd).toFixed(6));
+
+      await updateUserFields(referrer.uid, {
+        points: updatedRefPoints,
+        usdBalance: updatedRefUsd,
+        commissionPointsEarned: updatedCommPts,
+        commissionUsdEarned: updatedCommUsd
+      });
+
+      await createPushedEntry(`commissions/${referrer.uid}`, {
+        fromUserName: earnerUser.name,
+        fromUid: earnerUser.uid,
+        commissionPoints: commissionPts,
+        commissionUsd,
+        ratePercent: 20,
+        createdAt: timestamp
+      });
+
+      await createPushedEntry(`transactions/${referrer.uid}`, {
+        type: "commission",
+        title: "20% Referral Commission",
+        detail: `Live share from ${earnerUser.name} (${earnerUser.uid})`,
+        amountLabel: `+${commissionPts} pts (+$${commissionUsd.toFixed(6)})`,
+        status: "Completed",
+        createdAt: timestamp
+      });
+    }
+
+    function renderCommissions() {
+      if (!currentUser) return;
+      const totalCommPts = Number(currentUser.commissionPointsEarned || 0);
+      const totalCommUsd = Number(currentUser.commissionUsdEarned || 0);
+
+      document.getElementById("referralCountBadge").textContent = referredMembersCount.toLocaleString();
+      document.getElementById("commissionPointsBadge").textContent = totalCommPts.toLocaleString();
+      document.getElementById("commissionUsdBadge").textContent = `$${totalCommUsd.toFixed(4)}`;
+
+      const listEl = document.getElementById("commissionFeedList");
+      if (!userCommissions || userCommissions.length === 0) {
+        listEl.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center glass-subtle rounded-2xl">No referral commissions yet. Share your invitation code to earn 20% live.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = userCommissions
+        .slice(0, 15)
+        .map((c) => {
+          const dt = c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+          return `
+            <div class="glass-subtle rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-xs">
+              <div class="min-w-0">
+                <p class="font-semibold text-white truncate">20% Commission • ${escapeHtml(c.fromUserName || "Member")}</p>
+                <p class="text-[11px] text-slate-400">From ${escapeHtml(c.fromUid || "")} ${dt ? "• " + dt : ""}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-bold text-emerald-400">+${Number(c.commissionPoints || 0)} pts</p>
+                <p class="text-[11px] font-mono text-amber-300">+$${Number(c.commissionUsd || 0).toFixed(6)}</p>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function setMaxConvertPoints() {
+      if (!currentUser) return;
+      const avail = Math.floor(Number(currentUser.points || 0) / 10) * 10;
+      const input = document.getElementById("convertPointsInput");
+      input.value = Math.max(MIN_CONVERT_POINTS, avail);
+      updateConvertPreview();
+    }
+
+    function updateConvertPreview() {
+      const pts = Number(document.getElementById("convertPointsInput").value || 0);
+      const usdValue = (pts / 10) * USD_PER_10_POINTS;
+      document.getElementById("convertUsdPreview").textContent = `$${usdValue.toFixed(6)} USD`;
+    }
+
+    async function executePointConversion() {
+      if (!currentUser) return;
+
+      const ptsToConvert = Number(document.getElementById("convertPointsInput").value || 0);
+      const currentPts = Number(currentUser.points || 0);
+
+      if (Number.isNaN(ptsToConvert) || ptsToConvert < MIN_CONVERT_POINTS) {
+        showToast("Minimum 300 Points", `You must convert at least ${MIN_CONVERT_POINTS} points.`, true);
+        return;
+      }
+
+      if (ptsToConvert > currentPts) {
+        showToast("Insufficient Points", `You only have ${currentPts} points available.`, true);
+        return;
+      }
+
+      try {
+        const earnedUsd = Number(((ptsToConvert / 10) * USD_PER_10_POINTS).toFixed(6));
+        const nextPts = Number((currentPts - ptsToConvert).toFixed(2));
+        const nextUsd = Number((Number(currentUser.usdBalance || 0) + earnedUsd).toFixed(6));
+        const now = Date.now();
+
+        await updateUserFields(currentUser.uid, {
+          points: nextPts,
+          usdBalance: nextUsd
+        });
+
+        await createPushedEntry(`transactions/${currentUser.uid}`, {
+          type: "convert",
+          title: "Point Conversion",
+          detail: `Converted ${ptsToConvert} pts @ $0.005333 / 10 pts`,
+          amountLabel: `+$${earnedUsd.toFixed(6)} USD (-${ptsToConvert} pts)`,
+          status: "Completed",
+          createdAt: now
+        });
+
+        if (!rtdb) {
+          refreshFromLocalStore(currentUser.uid);
+        }
+
+        showToast("Conversion Complete", `Converted ${ptsToConvert} points into $${earnedUsd.toFixed(6)} USD.`);
+      } catch (err) {
+        console.error(err);
+        showToast("Conversion Error", "Could not complete point conversion.", true);
+      }
+    }
+
+    async function handleWithdrawalSubmit(event) {
+      event.preventDefault();
+      if (!currentUser) return;
+
+      const method = document.getElementById("withdrawMethod").value;
+      const amount = Number(document.getElementById("withdrawAmount").value || 0);
+      const walletAddress = document.getElementById("withdrawWalletAddress").value.trim();
+      const currentUsd = Number(currentUser.usdBalance || 0);
+
+      if (Number.isNaN(amount) || amount < MIN_WITHDRAWAL_USD) {
+        showToast("Minimum Withdrawal", `Minimum withdrawal is $${MIN_WITHDRAWAL_USD.toFixed(2)} USD.`, true);
+        return;
+      }
+
+      if (amount > currentUsd) {
+        showToast("Insufficient Balance", `Available USD balance is $${currentUsd.toFixed(4)}.`, true);
+        return;
+      }
+
+      if (!walletAddress || walletAddress.length < 4) {
+        showToast("Wallet Required", "Please enter a valid destination address or account number.", true);
+        return;
+      }
+
+      try {
+        const nextUsd = Number((currentUsd - amount).toFixed(6));
+        const now = Date.now();
+
+        const withdrawalRecord = await createPushedEntry("withdrawals", {
+          uid: currentUser.uid,
+          inviteCode: currentUser.inviteCode || currentUser.uid,
+          userName: currentUser.name,
+          email: currentUser.email || "—",
+          phone: currentUser.fullPhone || currentUser.phone || "—",
+          countryName: currentUser.countryName,
+          method,
+          amountUsd: amount,
+          walletAddress,
+          status: "Pending",
+          createdAt: now
+        });
+
+        await createPushedEntry(`transactions/${currentUser.uid}`, {
+          type: "withdrawal",
+          withdrawalId: withdrawalRecord.id,
+          title: `Withdrawal • ${method}`,
+          detail: `Destination: ${walletAddress}`,
+          amountLabel: `-$${amount.toFixed(2)} USD`,
+          status: "Pending",
+          createdAt: now
+        });
+
+        await updateUserFields(currentUser.uid, { usdBalance: nextUsd });
+
+        document.getElementById("withdrawForm").reset();
+        updateWalletPlaceholder();
+
+        if (!rtdb) {
+          refreshFromLocalStore(currentUser.uid);
+        }
+
+        showToast("Withdrawal Pending", `$${amount.toFixed(2)} USD request submitted via ${method}.`);
+      } catch (err) {
+        console.error(err);
+        showToast("Withdrawal Error", "Could not submit withdrawal request.", true);
+      }
+    }
+
+    function renderTransactions() {
+      const container = document.getElementById("transactionList");
+      if (!userTransactions || userTransactions.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">No transactions recorded yet.</p>`;
+        return;
+      }
+
+      container.innerHTML = userTransactions
+        .map((tx) => {
+          const isPending = tx.status === "Pending";
+          const isRejected = tx.status === "Rejected";
+
+          const statusBadge = isPending
+            ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">Pending</span>`
+            : isRejected
+            ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">Rejected</span>`
+            : `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${escapeHtml(tx.status || "Completed")}</span>`;
+
+          const dateStr = tx.createdAt
+            ? new Date(tx.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "";
+
+          const valueColor =
+            tx.type === "withdrawal"
+              ? "text-amber-300"
+              : tx.type === "commission"
+              ? "text-emerald-300"
+              : tx.type === "convert"
+              ? "text-sky-300"
+              : "text-emerald-400";
+
+          return `
+            <div class="glass-subtle rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="text-sm font-semibold text-white truncate">${escapeHtml(tx.title || "Activity")}</p>
+                  ${statusBadge}
+                </div>
+                <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(tx.detail || "")}</p>
+                <p class="text-[11px] text-slate-500 mt-1">${escapeHtml(dateStr)}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="text-sm font-bold ${valueColor}">${escapeHtml(tx.amountLabel || "")}</p>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
